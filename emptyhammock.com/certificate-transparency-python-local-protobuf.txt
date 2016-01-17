@@ -1,0 +1,11 @@
+--- certificate-transparency/python/Makefile.orig	2014-10-02 12:10:07.572521774 -0400
++++ certificate-transparency/python/Makefile	2014-10-02 12:10:55.712519761 -0400
+@@ -2,7 +2,7 @@
+ 	ct/proto/test_message_pb2.py
+ 
+ ct/proto/%_pb2.py: ct/proto/%.proto
+-	protoc $^ -I/usr/include/ -I/usr/local/include -I. --python_out=.
++	protoc $^ -I/usr/include/ -I/usr/local/include $(LOCAL_PROTO_INCLUDE) -I. --python_out=.
+ 
+ ct/proto/ct_pb2.py: ../proto/ct.proto
+ 	protoc --python_out=ct/proto -I../proto ../proto/ct.proto

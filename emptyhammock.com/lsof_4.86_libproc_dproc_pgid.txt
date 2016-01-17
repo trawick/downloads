@@ -1,0 +1,20 @@
+--- dialects/darwin/libproc/dproc.c.orig	2012-10-15 11:17:41.000000000 -0400
++++ dialects/darwin/libproc/dproc.c	2012-10-15 11:18:51.000000000 -0400
+@@ -318,7 +318,7 @@
+ 	/*
+ 	 * Check for process or command exclusion.
+ 	 */
+-	    if (is_proc_excl((int)pid, (int)tai.pbsd.pbi_rgid,
++	    if (is_proc_excl((int)pid, (int)tai.pbsd.pbi_pgid,
+ 			     (UID_ARG)tai.pbsd.pbi_uid, &pss, &sf))
+ 	    {
+ 		continue;
+@@ -363,7 +363,7 @@
+ 	/*
+ 	 * Allocate local process space.
+ 	 */
+-	    alloc_lproc((int)pid, (int)tai.pbsd.pbi_rgid,
++	    alloc_lproc((int)pid, (int)tai.pbsd.pbi_pgid,
+ 		(int)tai.pbsd.pbi_ppid, (UID_ARG)tai.pbsd.pbi_uid,
+ 		(tai.pbsd.pbi_name[0] != '\0') ? tai.pbsd.pbi_name
+ 					       : tai.pbsd.pbi_comm,

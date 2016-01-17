@@ -1,0 +1,11 @@
+--- dialects/freebsd/dproc.c.orig	2008-10-21 12:16:13.000000000 -0400
++++ dialects/freebsd/dproc.c	2012-10-15 15:56:43.000000000 -0400
+@@ -197,7 +197,7 @@
+ #if	FREEBSDV<2000
+ 	if ((Np = kvm_getprocs(KINFO_PROC_ALL, 0)) < 0)
+ #else	/* FREEBSDV>=2000 */
+-	if ((P = kvm_getprocs(Kd, KERN_PROC_ALL, 0, &Np)) == NULL)
++	if ((P = kvm_getprocs(Kd, KERN_PROC_PROC, 0, &Np)) == NULL)
+ #endif	/* FREEBSDV<2000 */
+ 
+ 	{

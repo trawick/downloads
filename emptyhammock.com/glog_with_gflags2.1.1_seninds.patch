@@ -1,0 +1,66 @@
+diff -rupN ./src/demangle_unittest.cc ../google-glog-patched/src/demangle_unittest.cc
+--- ./src/demangle_unittest.cc	2014-05-19 09:53:04.190281311 +0400
++++ ../google-glog-patched/src/demangle_unittest.cc	2014-05-19 09:51:52.942282874 +0400
+@@ -46,6 +46,9 @@ GLOG_DEFINE_bool(demangle_filter, false,
+ 
+ using namespace std;
+ using namespace GOOGLE_NAMESPACE;
++#ifdef HAVE_LIB_GFLAGS
++  using namespace gflags;
++#endif
+ 
+ // A wrapper function for Demangle() to make the unit test simple.
+ static const char *DemangleIt(const char * const mangled) {
+diff -rupN ./src/logging_unittest.cc ../google-glog-patched/src/logging_unittest.cc
+--- ./src/logging_unittest.cc	2014-05-19 09:53:04.194281311 +0400
++++ ../google-glog-patched/src/logging_unittest.cc	2014-05-19 09:51:52.942282874 +0400
+@@ -79,6 +79,9 @@ using GOOGLE_NAMESPACE::glog_testing::Sc
+ 
+ using namespace std;
+ using namespace GOOGLE_NAMESPACE;
++#ifdef HAVE_LIB_GFLAGS
++  using namespace gflags;
++#endif
+ 
+ // Some non-advertised functions that we want to test or use.
+ _START_GOOGLE_NAMESPACE_
+diff -rupN ./src/signalhandler_unittest.cc ../google-glog-patched/src/signalhandler_unittest.cc
+--- ./src/signalhandler_unittest.cc	2014-05-19 09:53:04.282281309 +0400
++++ ../google-glog-patched/src/signalhandler_unittest.cc	2014-05-19 09:51:52.942282874 +0400
+@@ -42,6 +42,9 @@
+ #include "glog/logging.h"
+ 
+ using namespace GOOGLE_NAMESPACE;
++#ifdef HAVE_LIB_GFLAGS
++  using namespace gflags;
++#endif
+ 
+ void* DieInThread(void*) {
+   // We assume pthread_t is an integral number or a pointer, rather
+diff -rupN ./src/symbolize_unittest.cc ../google-glog-patched/src/symbolize_unittest.cc
+--- ./src/symbolize_unittest.cc	2014-05-19 09:53:04.282281309 +0400
++++ ../google-glog-patched/src/symbolize_unittest.cc	2014-05-19 09:51:52.942282874 +0400
+@@ -43,6 +43,9 @@
+ 
+ using namespace std;
+ using namespace GOOGLE_NAMESPACE;
++#ifdef HAVE_LIB_GFLAGS
++  using namespace gflags;
++#endif
+ 
+ #if defined(HAVE_STACKTRACE) && defined(__ELF__)
+ 
+diff -rupN ./src/utilities_unittest.cc ../google-glog-patched/src/utilities_unittest.cc
+--- ./src/utilities_unittest.cc	2014-05-19 09:53:04.282281309 +0400
++++ ../google-glog-patched/src/utilities_unittest.cc	2014-05-19 09:51:52.942282874 +0400
+@@ -34,6 +34,9 @@
+ #include "glog/logging.h"
+ 
+ using namespace GOOGLE_NAMESPACE;
++#ifdef HAVE_LIB_GFLAGS
++  using namespace gflags;
++#endif
+ 
+ TEST(utilities, sync_val_compare_and_swap) {
+   bool now_entering = false;
+Binary files ./.svn/wc.db and ../google-glog-patched/.svn/wc.db differ
