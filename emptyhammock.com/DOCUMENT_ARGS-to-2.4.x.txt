@@ -1,0 +1,92 @@
+Index: CHANGES
+===================================================================
+--- CHANGES	(revision 1735910)
++++ CHANGES	(working copy)
+@@ -1,9 +1,15 @@
+                                                          -*- coding: utf-8 -*-
+ 
++  *) mod_include: Add variable DOCUMENT_ARGS, with the arguments to the
++     request for the SSI document.  [Jeff Trawick]
++
+   *) mod_ssl: Add hooks to allow other modules to perform processing at
+      several stages of initialization and connection handling.  See
+      mod_ssl_openssl.h.  [Jeff Trawick]
+ 
++  *) core: Extend support for setting aside data from the network input filter
++     to any connection or request input filter. [Graham Leggett]
++
+   *) mod_http2: disabling PUSH when client sends GOAWAY.
+   
+   *) mod_rewrite: Don't implicitly URL-escape the original query string
+Index: docs/manual/mod/mod_include.xml
+===================================================================
+--- docs/manual/mod/mod_include.xml	(revision 1735910)
++++ docs/manual/mod/mod_include.xml	(working copy)
+@@ -526,6 +526,16 @@
+       <dt><code>DATE_LOCAL</code></dt>
+       <dd>The current date in the local time zone.</dd>
+ 
++      <dt><code>DOCUMENT_ARGS</code></dt>
++      <dd>This variable contains the query string of the active SSI
++      document, or the empty string if a query string is not
++      included.  For subrequests invoked through the
++      <code>include</code> SSI directive, <code>QUERY_STRING</code>
++      will represent the query string of the subrequest and
++      <code>DOCUMENT_ARGS</code> will represent the query string of
++      the SSI document.  (Available in Apache HTTP Server 2.4.19 and
++      later.)</dd>
++
+       <dt><code>DOCUMENT_NAME</code></dt>
+       <dd>The filename (excluding directories) of the document
+       requested by the user.</dd>
+@@ -544,10 +554,13 @@
+       the user.</dd>
+ 
+       <dt><code>QUERY_STRING_UNESCAPED</code></dt>
+-      <dd>If a query string is present, this variable contains the
+-      (%-decoded) query string, which is <em>escaped</em> for shell
+-      usage (special characters like <code>&amp;</code> etc. are
+-      preceded by backslashes).</dd>
++      <dd>If a query string is present in the request for the active
++      SSI document, this variable contains the (%-decoded) query
++      string, which is <em>escaped</em> for shell usage (special
++      characters like <code>&amp;</code> etc. are preceded by
++      backslashes).  It is not set if a query string is not
++      present.  Use <code>DOCUMENT_ARGS</code> if shell escaping
++      is not desired.</dd>
+     </dl>
+ </section>
+ 
+Index: modules/filters/mod_include.c
+===================================================================
+--- modules/filters/mod_include.c	(revision 1735910)
++++ modules/filters/mod_include.c	(working copy)
+@@ -597,6 +597,7 @@
+     apr_table_setn(e, "DATE_GMT", LAZY_VALUE);
+     apr_table_setn(e, "LAST_MODIFIED", LAZY_VALUE);
+     apr_table_setn(e, "DOCUMENT_URI", r->uri);
++    apr_table_setn(e, "DOCUMENT_ARGS", r->args ? r->args : "");
+     if (r->path_info && *r->path_info) {
+         apr_table_setn(e, "DOCUMENT_PATH_INFO", r->path_info);
+     }
+Index: support/suexec.c
+===================================================================
+--- support/suexec.c	(revision 1735910)
++++ support/suexec.c	(working copy)
+@@ -85,6 +85,7 @@
+     "CONTEXT_PREFIX=",
+     "DATE_GMT=",
+     "DATE_LOCAL=",
++    "DOCUMENT_ARGS=",
+     "DOCUMENT_NAME=",
+     "DOCUMENT_PATH_INFO=",
+     "DOCUMENT_ROOT=",
+Index: .
+===================================================================
+--- .	(revision 1735910)
++++ .	(working copy)
+
+Property changes on: .
+___________________________________________________________________
+Modified: svn:mergeinfo
+   Merged /httpd/httpd/trunk:r1734817,1734955,1734989
