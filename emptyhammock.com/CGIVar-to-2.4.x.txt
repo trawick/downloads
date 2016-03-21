@@ -1,6 +1,6 @@
 Index: CHANGES
 ===================================================================
---- CHANGES	(revision 1735966)
+--- CHANGES	(revision 1735975)
 +++ CHANGES	(working copy)
 @@ -1,5 +1,9 @@
                                                           -*- coding: utf-8 -*-
@@ -14,7 +14,7 @@ Index: CHANGES
  
 Index: docs/manual/mod/core.xml
 ===================================================================
---- docs/manual/mod/core.xml	(revision 1735966)
+--- docs/manual/mod/core.xml	(revision 1735975)
 +++ docs/manual/mod/core.xml	(working copy)
 @@ -598,6 +598,32 @@
  </directivesynopsis>
@@ -51,7 +51,7 @@ Index: docs/manual/mod/core.xml
  headers</description>
 Index: include/ap_mmn.h
 ===================================================================
---- include/ap_mmn.h	(revision 1735966)
+--- include/ap_mmn.h	(revision 1735975)
 +++ include/ap_mmn.h	(working copy)
 @@ -457,7 +457,7 @@
   *                          ap_get_protocol(). Add HTTP_MISDIRECTED_REQUEST.
@@ -70,9 +70,18 @@ Index: include/ap_mmn.h
   */
  
  #define MODULE_MAGIC_COOKIE 0x41503234UL /* "AP24" */
+@@ -475,7 +476,7 @@
+ #ifndef MODULE_MAGIC_NUMBER_MAJOR
+ #define MODULE_MAGIC_NUMBER_MAJOR 20120211
+ #endif
+-#define MODULE_MAGIC_NUMBER_MINOR 57                   /* 0...n */
++#define MODULE_MAGIC_NUMBER_MINOR 58                   /* 0...n */
+ 
+ /**
+  * Determine if the server's current MODULE_MAGIC_NUMBER is at least a
 Index: include/http_core.h
 ===================================================================
---- include/http_core.h	(revision 1735966)
+--- include/http_core.h	(revision 1735975)
 +++ include/http_core.h	(working copy)
 @@ -669,6 +669,9 @@
      unsigned int cgi_pass_auth : 2;
@@ -86,7 +95,7 @@ Index: include/http_core.h
  /* macro to implement off by default behaviour */
 Index: server/core.c
 ===================================================================
---- server/core.c	(revision 1735966)
+--- server/core.c	(revision 1735975)
 +++ server/core.c	(working copy)
 @@ -409,6 +409,15 @@
  
@@ -147,7 +156,7 @@ Index: server/core.c
               "be passed to scripts"),
 Index: server/util_script.c
 ===================================================================
---- server/util_script.c	(revision 1735966)
+--- server/util_script.c	(revision 1735975)
 +++ server/util_script.c	(working copy)
 @@ -366,13 +366,26 @@
  AP_DECLARE(void) ap_add_cgi_vars(request_rec *r)
@@ -179,7 +188,7 @@ Index: server/util_script.c
       * args and path_info of the original request, and not any that may have
 Index: .
 ===================================================================
---- .	(revision 1735966)
+--- .	(revision 1735975)
 +++ .	(working copy)
 
 Property changes on: .
