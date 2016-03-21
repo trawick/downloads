@@ -1,0 +1,188 @@
+Index: CHANGES
+===================================================================
+--- CHANGES	(revision 1735966)
++++ CHANGES	(working copy)
+@@ -1,5 +1,9 @@
+                                                          -*- coding: utf-8 -*-
+ 
++  *) core: New CGIVar directive can configure REQUEST_URI to represent the
++     current URI being processed instead of always the original request.
++     [Jeff Trawick]
++
+   *) mod_include: Add variable DOCUMENT_ARGS, with the arguments to the
+      request for the SSI document.  [Jeff Trawick]
+ 
+Index: docs/manual/mod/core.xml
+===================================================================
+--- docs/manual/mod/core.xml	(revision 1735966)
++++ docs/manual/mod/core.xml	(working copy)
+@@ -598,6 +598,32 @@
+ </directivesynopsis>
+ 
+ <directivesynopsis>
++<name>CGIVar</name>
++<description>Controls how some CGI variables are set</description>
++<syntax>CGIVar <var>variable</var> <var>rule</var></syntax>
++<contextlist><context>directory</context><context>.htaccess</context>
++</contextlist>
++<override>FileInfo</override>
++<compatibility>Available in Apache HTTP Server 2.5 and later</compatibility>
++
++<usage>
++  <p>This directive controls how some CGI variables are set.</p>
++
++  <p><strong>REQUEST_URI</strong> rules:</p>
++  <dl>
++    <dt><code>original-uri</code> (default)</dt>
++    <dd>The value is taken from the original request line, and will not
++    reflect internal redirects or subrequests which change the requested
++    resource.</dd>
++    <dt><code>current-uri</code></dt>
++    <dd>The value reflects the resource currently being processed,
++    which may be different than the original request from the client
++    due to internal redirects or subrequests.</dd>
++  </dl>
++</usage>
++</directivesynopsis>
++
++<directivesynopsis>
+ <name>ContentDigest</name>
+ <description>Enables the generation of <code>Content-MD5</code> HTTP Response
+ headers</description>
+Index: include/ap_mmn.h
+===================================================================
+--- include/ap_mmn.h	(revision 1735966)
++++ include/ap_mmn.h	(working copy)
+@@ -457,7 +457,7 @@
+  *                          ap_get_protocol(). Add HTTP_MISDIRECTED_REQUEST.
+  *                          Added ap_parse_token_list_strict() to httpd.h
+  * 20120211.52 (2.4.17-dev) Add master conn_rec* member in conn_rec.
+- * 20120211.53 (2.4.19-dev) Add epxr_hander to core_dir_config.
++ * 20120211.53 (2.4.19-dev) Add expr_handler to core_dir_config.
+  * 20120211.54 (2.4.19-dev) Add ap_proxy_buckets_lifetime_transform and
+  *                          ap_proxy_transfer_between_connections to
+  *                          mod_proxy.h
+@@ -468,6 +468,7 @@
+  * 20120211.56 (2.4.19-dev) Split useragent_host from the conn_rec into
+  *                          the request_rec, with ap_get_useragent_host()
+  * 20120211.57 (2.4.19-dev) Add mod_ssl_openssl.h and OpenSSL-specific hooks
++ * 20120211.58 (2.4.19-dev) Add cgi_var_rules to core_dir_config.
+  */
+ 
+ #define MODULE_MAGIC_COOKIE 0x41503234UL /* "AP24" */
+Index: include/http_core.h
+===================================================================
+--- include/http_core.h	(revision 1735966)
++++ include/http_core.h	(working copy)
+@@ -669,6 +669,9 @@
+     unsigned int cgi_pass_auth : 2;
+     unsigned int qualify_redirect_url :2;
+     ap_expr_info_t  *expr_handler;         /* forced with SetHandler */
++
++    /** Table of rules for building CGI variables, NULL if none configured */
++    apr_hash_t *cgi_var_rules;
+ } core_dir_config;
+ 
+ /* macro to implement off by default behaviour */
+Index: server/core.c
+===================================================================
+--- server/core.c	(revision 1735966)
++++ server/core.c	(working copy)
+@@ -409,6 +409,15 @@
+ 
+     conf->cgi_pass_auth = new->cgi_pass_auth != AP_CGI_PASS_AUTH_UNSET ? new->cgi_pass_auth : base->cgi_pass_auth;
+ 
++    if (new->cgi_var_rules) {
++        if (!conf->cgi_var_rules) {
++            conf->cgi_var_rules = new->cgi_var_rules;
++        }
++        else {
++            conf->cgi_var_rules = apr_hash_overlay(a, new->cgi_var_rules, conf->cgi_var_rules);
++        }
++    }
++
+     AP_CORE_MERGE_FLAG(qualify_redirect_url, conf, base, new);
+ 
+     return (void*)conf;
+@@ -1796,6 +1805,31 @@
+     return NULL;
+ }
+ 
++static const char *set_cgi_var(cmd_parms *cmd, void *d_,
++                               const char *var, const char *rule_)
++{
++    core_dir_config *d = d_;
++    char *rule = apr_pstrdup(cmd->pool, rule_);
++
++    ap_str_tolower(rule);
++
++    if (!strcmp(var, "REQUEST_URI")) {
++        if (strcmp(rule, "current-uri") && strcmp(rule, "original-uri")) {
++            return "Valid rules for REQUEST_URI are 'current-uri' and 'original-uri'";
++        }
++    }
++    else {
++        return apr_pstrcat(cmd->pool, "Unrecognized CGI variable: \"",
++                           var, "\"", NULL);
++    }
++
++    if (!d->cgi_var_rules) {
++        d->cgi_var_rules = apr_hash_make(cmd->pool);
++    }
++    apr_hash_set(d->cgi_var_rules, var, APR_HASH_KEY_STRING, rule);
++    return NULL;
++}
++
+ static const char *set_qualify_redirect_url(cmd_parms *cmd, void *d_, int flag)
+ {
+     core_dir_config *d = d_;
+@@ -4293,6 +4327,8 @@
+ AP_INIT_FLAG("CGIPassAuth", set_cgi_pass_auth, NULL, OR_AUTHCFG,
+              "Controls whether HTTP authorization headers, normally hidden, will "
+              "be passed to scripts"),
++AP_INIT_TAKE2("CGIVar", set_cgi_var, NULL, OR_FILEINFO,
++              "Controls how some CGI variables are set"),
+ AP_INIT_FLAG("QualifyRedirectURL", set_qualify_redirect_url, NULL, OR_FILEINFO,
+              "Controls whether HTTP authorization headers, normally hidden, will "
+              "be passed to scripts"),
+Index: server/util_script.c
+===================================================================
+--- server/util_script.c	(revision 1735966)
++++ server/util_script.c	(working copy)
+@@ -366,13 +366,26 @@
+ AP_DECLARE(void) ap_add_cgi_vars(request_rec *r)
+ {
+     apr_table_t *e = r->subprocess_env;
++    core_dir_config *conf =
++        (core_dir_config *)ap_get_core_module_config(r->per_dir_config);
++    int request_uri_from_original = 1;
++    const char *request_uri_rule;
+ 
+     apr_table_setn(e, "GATEWAY_INTERFACE", "CGI/1.1");
+     apr_table_setn(e, "SERVER_PROTOCOL", r->protocol);
+     apr_table_setn(e, "REQUEST_METHOD", r->method);
+     apr_table_setn(e, "QUERY_STRING", r->args ? r->args : "");
+-    apr_table_setn(e, "REQUEST_URI", original_uri(r));
+ 
++    if (conf->cgi_var_rules) {
++        request_uri_rule = apr_hash_get(conf->cgi_var_rules, "REQUEST_URI",
++                                        APR_HASH_KEY_STRING);
++        if (request_uri_rule && !strcmp(request_uri_rule, "current-uri")) {
++            request_uri_from_original = 0;
++        }
++    }
++    apr_table_setn(e, "REQUEST_URI",
++                   request_uri_from_original ? original_uri(r) : r->uri);
++
+     /* Note that the code below special-cases scripts run from includes,
+      * because it "knows" that the sub_request has been hacked to have the
+      * args and path_info of the original request, and not any that may have
+Index: .
+===================================================================
+--- .	(revision 1735966)
++++ .	(working copy)
+
+Property changes on: .
+___________________________________________________________________
+Modified: svn:mergeinfo
+   Merged /httpd/httpd/trunk:r1734947,1735952
