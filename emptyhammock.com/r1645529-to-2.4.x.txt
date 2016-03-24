@@ -1,0 +1,36 @@
+Index: CHANGES
+===================================================================
+--- CHANGES	(revision 1736480)
++++ CHANGES	(working copy)
+@@ -2,6 +2,9 @@
+ 
+ Changes with Apache 2.4.20
+ 
++  *) mod_ssl: Return 502 instead of 500 when SSL peer check or 
++     proxy_post_handshake hook fails.  [Jeff Trawick]
++
+   *) mod_http2: fix for missing score board updates on request count, fix for
+      memory leak on slave connection reuse.
+      
+Index: modules/ssl/ssl_engine_io.c
+===================================================================
+--- modules/ssl/ssl_engine_io.c	(revision 1736480)
++++ modules/ssl/ssl_engine_io.c	(working copy)
+@@ -1203,7 +1203,7 @@
+             /* ensure that the SSL structures etc are freed, etc: */
+             ssl_filter_io_shutdown(filter_ctx, c, 1);
+             apr_table_setn(c->notes, "SSL_connect_rv", "err");
+-            return HTTP_BAD_GATEWAY;
++            return MODSSL_ERROR_BAD_GATEWAY;
+         }
+ 
+         apr_table_setn(c->notes, "SSL_connect_rv", "ok");
+Index: .
+===================================================================
+--- .	(revision 1736480)
++++ .	(working copy)
+
+Property changes on: .
+___________________________________________________________________
+Modified: svn:mergeinfo
+   Merged /httpd/httpd/trunk:r1645529
